@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Our Love Story — Santhosh &amp; Prasithya</title>
+  <meta name="description" content="The love story of Santhosh and Prasithya.">
+  <meta name="theme-color" content="#3A0F1B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --noir: #0B0B0D;
+      --emerald: #0E2E24;
+      --emerald-deep: #081C16;
+      --gold: #C6A15B;
+      --gold-light: #E7CE94;
+      --gold-dim: #8A6E3B;
+      --ivory: #F8F4EA;
+      --ivory-warm: #F1E9D8;
+      --wine: #3A0F1B;
+      --ink: #1C1712;
+      --shadow: 0 24px 60px rgba(0, 0, 0, .28);
+      --serif: 'EB Garamond', serif;
+      --display: 'EB Garamond', serif;
+      --sans: 'EB Garamond', serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--ivory);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    .wrap {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .diamond-flourish {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto 8px;
+      width: 180px;
+    }
+
+    .diamond-flourish::before,
+    .diamond-flourish::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+
+    .diamond-flourish::after {
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    .diamond-flourish .dot {
+      width: 7px;
+      height: 7px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+
+    /* Hero banner with image — fluid, responsive height across breakpoints */
+    .story-hero {
+      position: relative;
+      width: 100%;
+      min-height: 70vh;
+      max-height: 900px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background-image: linear-gradient(180deg, rgba(11,11,13,.05) 0%, rgba(11,11,13,.15) 55%, rgba(11,11,13,.82) 100%), url("image/lovestorybanner.png");
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+    }
+
+    .story-hero .story-hero-inner {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding: 60px 20px 40px;
+      text-align: center;
+      color: var(--ivory);
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: .4em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 400;
+    }
+
+    .story-hero h1 {
+      font-family: var(--display);
+      font-size: clamp(28px, 6vw, 48px);
+      color: var(--gold-light);
+      margin-top: 12px;
+      letter-spacing: .02em;
+      line-height: 1.15;
+      word-wrap: break-word;
+    }
+
+    .story-hero p.sub {
+      margin-top: 10px;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(14px, 3vw, 16px);
+      color: var(--ivory-warm);
+      opacity: .9;
+    }
+
+    /* Body content */
+    .story-body {
+      padding: 60px 20px 40px;
+    }
+
+    .story-body p {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(16px, 2.1vw, 20px);
+      line-height: 1.95;
+      color: var(--ink);
+      margin: 0 auto 22px;
+      max-width: 660px;
+    }
+
+    .story-body > .wrap > img {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      display: block;
+      margin: 24px auto;
+      border: 1px solid rgba(198, 161, 91, .5);
+      box-shadow: var(--shadow);
+      object-fit: cover;
+    }
+
+    .story-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      max-width: 660px;
+      margin: 36px auto 0;
+    }
+
+    .story-gallery img {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      border: 1px solid rgba(198, 161, 91, .5);
+      box-shadow: var(--shadow);
+      display: block;
+    }
+
+    .story-btn-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 46px;
+    }
+
+    .story-btn {
+      padding: 13px 28px;
+      border: 1px solid var(--gold);
+      background: transparent;
+      color: var(--wine);
+      font-family: var(--sans);
+      font-size: 12.5px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      text-decoration: none;
+      display: inline-block;
+      transition: .25s;
+      text-align: center;
+    }
+
+    .story-btn:hover {
+      background: var(--gold);
+      color: var(--noir);
+    }
+
+    .story-btn.filled {
+      background: var(--wine);
+      border-color: var(--wine);
+      color: var(--gold-light);
+    }
+
+    .story-btn.filled:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--noir);
+    }
+
+    .story-footer {
+      text-align: center;
+      padding: 40px 20px 60px;
+      background: var(--emerald-deep);
+      color: var(--gold-light);
+    }
+
+    .story-footer .sig-love {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 15px;
+      opacity: .9;
+    }
+
+    .story-footer .sig-names {
+      font-family: var(--display);
+      font-size: clamp(22px, 4vw, 30px);
+      color: var(--gold-light);
+      margin-top: 10px;
+    }
+
+    /* Scratch card */
+    .scratch-section {
+      background: var(--noir);
+      color: var(--ivory-warm);
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .scratch-section .eyebrow {
+      color: var(--gold);
+    }
+
+    .scratch-section h2 {
+      font-family: var(--display);
+      font-size: clamp(22px, 4vw, 34px);
+      color: var(--gold-light);
+      margin-top: 10px;
+    }
+
+    .scratch-wrap {
+      position: relative;
+      max-width: 520px;
+      width: 100%;
+      margin: 32px auto 0;
+      border: 1px solid var(--gold);
+      box-shadow: var(--shadow);
+    }
+
+    .scratch-content {
+      background: linear-gradient(180deg, #fbf6ea, var(--ivory-warm));
+      padding: 34px 24px;
+      color: var(--ink);
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .quote-box {
+      text-align: center;
+      width: 100%;
+    }
+
+    .quote-box .qmark {
+      font-family: var(--display);
+      font-size: 30px;
+      color: var(--gold-dim);
+      line-height: .5;
+    }
+
+    .quote-box .quote-photo {
+      display: block;
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid var(--gold);
+      box-shadow: var(--shadow);
+      margin: 18px auto 14px;
+    }
+
+    .quote-box p {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(15px, 3.5vw, 18px);
+      color: var(--wine);
+      line-height: 1.6;
+      margin-top: 6px;
+      padding: 0 4px;
+    }
+
+    .quote-box .qauthor {
+      display: block;
+      margin-top: 10px;
+      font-family: var(--sans);
+      font-size: 10.5px;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 400;
+    }
+
+    #storyScratchCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .scratch-hint {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      color: var(--gold-light);
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(16px, 4vw, 19px);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .scratch-hint span.small {
+      font-size: 10.5px;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      opacity: .85;
+      font-family: var(--sans);
+      font-style: normal;
+    }
+
+    .petal {
+      position: fixed;
+      z-index: 90;
+      width: 12px;
+      height: 18px;
+      pointer-events: none;
+      background: radial-gradient(circle at 35% 25%, #ffe8d7, #d86f78 56%, #9b3045);
+      border-radius: 70% 20% 70% 20%;
+      opacity: 0;
+      animation: petal-pop 1.7s ease-out forwards;
+    }
+
+    @keyframes petal-pop {
+      0% {
+        opacity: 0;
+        transform: translate(0, 0) rotate(0deg) scale(.35);
+      }
+
+      18% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1);
+      }
+    }
+
+    /* ===== Responsive breakpoints ===== */
+    @media (max-width: 900px) {
+      .story-hero {
+        min-height: 65vh;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .story-hero {
+        min-height: 58vh;
+        background-position: 65% top;
+      }
+
+      .story-hero .story-hero-inner {
+        padding: 40px 16px 28px;
+      }
+
+      .story-body {
+        padding: 44px 16px 30px;
+      }
+
+      .story-gallery {
+        grid-template-columns: 1fr;
+      }
+
+      .story-gallery img {
+        height: 240px;
+      }
+
+      .story-btn {
+        width: 100%;
+        max-width: 320px;
+      }
+
+      .story-btn-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .scratch-section {
+        padding: 44px 16px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .story-hero {
+        min-height: 52vh;
+      }
+
+      .quote-box .quote-photo {
+        width: 100px;
+        height: 100px;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .story-hero {
+        min-height: 75vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <section class="story-hero">
+    <div class="story-hero-inner">
+      <div class="eyebrow">Our Journey</div>
+      <h1>Our Love Story</h1>
+      <p class="sub">Santhosh &amp; Prasithya</p>
+    </div>
+  </section>
+
+  <section class="story-body center">
+    <div class="wrap">
+      <div class="diamond-flourish"><span class="dot"></span></div>
+      <p>
+        What began as a simple friendship slowly grew into something we never expected —
+        a bond built on trust, laughter, and quiet understanding.
+      </p>
+      <p>
+        Through every conversation and every shared moment, we found in each other a home.
+        The small everyday things — a call after a long day, a shared joke, a bit of advice
+        when things felt uncertain — slowly became the foundation of something much deeper.
+      </p>
+        <img src="image/lovestory.png" alt="Santhosh portrait">
+      <p>
+        And now, we can't wait to begin this beautiful new chapter together, surrounded by
+        the people we love most. Thank you for being part of our story.
+      </p>
+
+      <div class="story-gallery">
+        <img src="image/groom-portrait.jpg" alt="Santhosh portrait">
+        <img src="image/ChatGPT Image Aug 4, 2026, 07_37_27 PM.png" alt="Prasithya and Santhosh together">
+      </div>
+
+      <div class="story-btn-row">
+        <a href="/Coupleshare.html" class="story-btn filled">View the Messages</a>
+        <a href="index.html" class="story-btn">Back to Invitation</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="scratch-section">
+    <div class="eyebrow">A Little Secret</div>
+    <h2>Scratch to Reveal</h2>
+    <div class="diamond-flourish"><span class="dot"></span></div>
+    <div class="scratch-wrap" id="storyScratchWrap">
+      <div class="scratch-content">
+        <div class="quote-box">
+          <div class="qmark">&#8220;</div>
+          <img src="image/lovestory.png" alt="Santhosh and Prasithya" class="quote-photo">
+          <p id="storyQuote">Loading...</p>
+          <span class="qauthor">Our Little Secret</span>
+        </div>
+      </div>
+      <canvas id="storyScratchCanvas"></canvas>
+      <div class="scratch-hint" id="storyScratchHint">
+        &#10022;<br>Scratch to Reveal<br><span class="small">a piece of our story</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="story-footer">
+    <div class="sig-love">With love,</div>
+    <div class="sig-names">Santhosh &amp; Prasithya</div>
+  </div>
+
+  <script>
+    /* ===================== RANDOM LOVE STORY QUOTE ===================== */
+    (function () {
+      const quotes = [
+        "The day we met, our two stories quietly became one.",
+        "Every small moment we shared was building something forever.",
+        "Friendship gave us trust; love gave us a future.",
+        "We found in each other the person we didn't know we were looking for.",
+        "Our story isn't loud — it's steady, warm, and ours.",
+        "From quiet conversations to a lifetime together.",
+        "The best chapters of our story are still unwritten.",
+        "You turned an ordinary day into the beginning of everything."
+      ];
+      const pick = quotes[Math.floor(Math.random() * quotes.length)];
+      document.getElementById('storyQuote').textContent = pick;
+    })();
+
+    /* ===================== SCRATCH CARD ===================== */
+    (function () {
+      const wrap = document.getElementById('storyScratchWrap');
+      const canvas = document.getElementById('storyScratchCanvas');
+      const hint = document.getElementById('storyScratchHint');
+      const ctx = canvas.getContext('2d');
+      let drawing = false, revealed = false;
+
+      function sizeCanvas() {
+        const r = wrap.getBoundingClientRect();
+        canvas.width = r.width;
+        canvas.height = r.height;
+        paintCover();
+      }
+      function paintCover() {
+        const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        g.addColorStop(0, '#171510');
+        g.addColorStop(1, '#0B0B0D');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(198,161,91,.4)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width + canvas.height; i += 20) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0); ctx.lineTo(0, i);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      window.addEventListener('resize', sizeCanvas);
+      sizeCanvas();
+
+      function getPos(e) {
+        const r = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+        return { x, y };
+      }
+      function scratchAt(x, y) {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 26, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      function checkRevealed() {
+        if (revealed) return;
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let cleared = 0;
+        for (let i = 3; i < data.length; i += 4 * 20) { if (data[i] === 0) cleared++; }
+        const total = data.length / (4 * 20);
+        if (cleared / total > 0.55) {
+          revealed = true;
+          burstPetals();
+          canvas.style.transition = 'opacity .6s ease';
+          canvas.style.opacity = '0';
+          hint.style.opacity = '0';
+          setTimeout(() => { canvas.style.display = 'none'; hint.style.display = 'none'; }, 650);
+        }
+      }
+      function burstPetals() {
+        const r = wrap.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        for (let i = 0; i < 28; i++) {
+          const petal = document.createElement('span');
+          const angle = (Math.PI * 2 * i / 28) + Math.random() * .35;
+          const distance = 80 + Math.random() * 150;
+          petal.className = 'petal';
+          petal.style.left = `${cx}px`;
+          petal.style.top = `${cy}px`;
+          petal.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+          petal.style.setProperty('--ty', `${Math.sin(angle) * distance - 35}px`);
+          petal.style.setProperty('--rot', `${Math.floor(Math.random() * 360)}deg`);
+          document.body.appendChild(petal);
+          setTimeout(() => petal.remove(), 1800);
+        }
+      }
+      function start(e) { drawing = true; hint.style.transition = 'opacity .3s'; hint.style.opacity = '0'; move(e); }
+      function move(e) {
+        if (!drawing) return;
+        const p = getPos(e);
+        scratchAt(p.x, p.y);
+        checkRevealed();
+        e.preventDefault();
+      }
+      function end() { drawing = false; }
+
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+    })();
+  </script>
+
+</body>
+
+</html>
