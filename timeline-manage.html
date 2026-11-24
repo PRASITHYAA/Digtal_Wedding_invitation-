@@ -42,6 +42,7 @@
     .links{grid-column:1/-1;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
     .links a{color:var(--wine);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;border:1px solid var(--gold);padding:10px 16px;text-decoration:none}
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
   <header><h1>Edit &amp; Preview</h1><p>Change a moment and see it exactly as it will appear</p></header>
@@ -108,7 +109,8 @@ const TL = {
     let bases = TL._base !== null ? [TL._base] : [], last;
     if (!bases.length) {
       let s = ''; try { s = (localStorage.getItem('tlApiBase') || '').trim().replace(/\/+$/, ''); } catch {}
-      bases = s ? [s] : ['', 'http://localhost:3000'];
+      const cfg = ((window.TL_CONFIG||{}).API_BASE||'').trim().replace(//+$/, ''), dev = ['localhost','127.0.0.1',''].includes(location.hostname);
+      bases = s ? [s] : cfg ? [cfg] : dev ? ['', 'http://localhost:3000'] : [];   /* never call localhost from a deployed site */
     }
     for (const b of bases) {
       try {
@@ -118,7 +120,7 @@ const TL = {
     }
     throw last || new Error('API not found');
   },
-  SB: { url: '', key: '' },   /* ONLINE SITES: paste your Supabase Project URL and anon key here (see supabase-setup.sql) */
+  SB: { url: (window.TL_CONFIG||{}).SUPABASE_URL||'', key: (window.TL_CONFIG||{}).SUPABASE_KEY||'' },   /* ONLINE SITES: paste your Supabase Project URL and anon key here (see supabase-setup.sql) */
   sb() { return !!(TL.SB.url && TL.SB.key); },
   bad: r => r.status === 401 || r.status === 403 || /WRONG_KEY/.test(JSON.stringify(r.data || '')),
   err: r => (r.data && (r.data.error || r.data.message)) || 'Could not save.',
