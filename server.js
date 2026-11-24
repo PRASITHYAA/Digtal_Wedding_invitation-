@@ -56,6 +56,7 @@ http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (url.pathname.toLowerCase() === '/api/timeline') {
     try { read(); } catch (e) { console.error(e.message); return send(res, 500, { error: 'Data file problem — see server log' }); }
+    if (req.method === 'GET' && url.searchParams.get('check')) return authed(req) ? send(res, 200, { ok: true }) : send(res, 401, { error: 'Wrong admin key' });
     if (req.method === 'GET') return send(res, 200, { items: sorted(read()) });
     if (!authed(req)) return send(res, 401, { error: 'Wrong admin key' });
     if (req.method === 'POST') {

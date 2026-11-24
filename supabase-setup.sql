@@ -44,6 +44,13 @@ begin
   delete from public.moments where id = i;
 end $$;
 
+-- Used by the admin page lock screen: returns true only for the correct password
+create or replace function public.check_key(k text)
+returns boolean language sql security definer set search_path = public as $$
+  select k is not distinct from 'Dhanu@5130';   -- <<< PASSWORD
+$$;
+grant execute on function public.check_key(text) to anon, authenticated;
+
 grant execute on function public.add_moment(text, text, text, text)    to anon, authenticated;
 grant execute on function public.update_moment(text, text, text, text) to anon, authenticated;
 grant execute on function public.delete_moment(text, text, text, text) to anon, authenticated;

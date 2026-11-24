@@ -93,95 +93,19 @@ const TL = {
     throw last || new Error('API not found');
   },
   SB: { url: TL_C.SUPABASE_URL || '', key: TL_C.SUPABASE_KEY || '' },
-  GH: { owner: TL_C.GITHUB_OWNER || 'PRASITHYAA', repo: TL_C.GITHUB_REPO || 'Digtal_Wedding_invitation-', branch: TL_C.GITHUB_BRANCH || '', path: TL_C.GITHUB_PATH || 'data/timeline.json', api: TL_C.GITHUB_API || 'https://api.github.com', raw: TL_C.GITHUB_RAW || 'https://raw.githubusercontent.com' },
-  mode() {   /* github (live site, default) | supabase | node (your own computer) */
-    if (TL_C.MODE) return TL_C.MODE;
+  mode() {   /* supabase (live site) | node (your own computer: node server.js) */
     if (TL.SB.url && TL.SB.key) return 'supabase';
     if (TL_C.API_BASE) return 'node';
-    return ['localhost', '127.0.0.1', ''].includes(location.hostname) ? 'node' : 'github';
+    return ['localhost', '127.0.0.1', ''].includes(location.hostname) ? 'node' : 'supabase';
   },
   sb() { return TL.mode() === 'supabase'; },
-  wrong: key => TL.mode() === 'github' && TL_C.GITHUB_TOKEN_ENC ? (key ? 'Wrong admin password.' : 'Enter the admin password first.')
-    : TL.mode() === 'github' ? (key ? 'Wrong GitHub token, or it has no permission for this repo.' : 'Paste your GitHub token in the key box first.')
-    : TL.mode() === 'supabase' ? (key ? 'Wrong admin password.' : 'Enter the admin password first.') : 'Wrong admin key.',
+  wrong: key => key ? 'Wrong admin password.' : 'Enter the admin password first.',
   cache() { try { return JSON.parse(localStorage.getItem('timelineCache') || 'null'); } catch { return null; } },
-  b64d: s => new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g, '')), c => c.charCodeAt(0))),
-  b64e: s => { let b = ''; new TextEncoder().encode(s).forEach(c => b += String.fromCharCode(c)); return btoa(b); },
-  /* ---- password -> GitHub token: the token is stored AES-GCM encrypted in config.js (key from the password via PBKDF2) ---- */
-  u8b: u => btoa(String.fromCharCode(...u)),
-  b8u: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)),
-  async kdf(pw, salt) {
-    const m = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, m, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-  },
-  async decrypt(blob, pw) {   /* blob = v1.<salt>.<iv>.<ciphertext> (base64) */
-    const [v, s, i, c] = String(blob).split('.'); if (v !== 'v1') throw new Error('bad format');
-    const k = await TL.kdf(pw, TL.b8u(s));
-    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: TL.b8u(i) }, k, TL.b8u(c)));
-  },
-  async ghToken(key) {
-    if (!key) return '';
-    if (!TL_C.GITHUB_TOKEN_ENC) return key;   /* nothing encrypted in config.js: the box holds a raw token */
-    if (TL._tk && TL._tk.pw === key) return TL._tk.token;
-    try { const t = await TL.decrypt(TL_C.GITHUB_TOKEN_ENC, key); TL._tk = { pw: key, token: t }; return t; } catch { return ''; }
-  },
-  /* ---- GitHub as the database: data/timeline.json in the repo ---- */
-  ghUrl: () => `${TL.GH.api}/repos/${TL.GH.owner}/${TL.GH.repo}/contents/${TL.GH.path}`,
-  async ghRead(token) {   /* -> {items, sha}; a missing file counts as the built-in list */
-    const q = (TL.GH.branch ? 'ref=' + encodeURIComponent(TL.GH.branch) + '&' : '') + 't=' + Date.now();
-    const H = { Accept: 'application/vnd.github+json' }; if (token) H.Authorization = 'Bearer ' + token;
-    const r = await fetch(TL.ghUrl() + '?' + q, { headers: H, cache: 'no-store' });
-    if (r.status === 404) return { items: TL.SEED.slice(), sha: null };
-    if (!r.ok) { const e = new Error('GitHub ' + r.status); e.status = r.status; throw e; }
-    const j = await r.json();
-    return { items: JSON.parse(TL.b64d(j.content)), sha: j.sha };
-  },
-  async ghWrite(mutate, token, message) {
-    const enc = !!TL_C.GITHUB_TOKEN_ENC, rejected = { ok: false, status: 424, data: { error: 'GitHub rejected the saved key (expired or revoked). Create a new one with make-key.html.' } };
-    token = await TL.ghToken(token);
-    if (!token) return { ok: false, status: 401, data: null };
-    for (let n = 0; n < 3; n++) {   /* read latest -> change -> save; retry if someone saved in between */
-      let cur; try { cur = await TL.ghRead(token); } catch (e) { if (!e.status) throw e; if (enc && (e.status === 401 || e.status === 403)) return rejected; return { ok: false, status: e.status, data: { error: e.message } }; }   /* no status = network down -> caller saves on this device */
-      let items; try { items = mutate(cur.items); } catch (e) { return { ok: false, status: 404, data: { error: e.message } }; }
-      const body = { message, content: TL.b64e(JSON.stringify(items, null, 2) + '\n') };
-      if (cur.sha) body.sha = cur.sha; if (TL.GH.branch) body.branch = TL.GH.branch;
-      const r = await fetch(TL.ghUrl(), { method: 'PUT', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (r.status === 409 || r.status === 422) continue;
-      if (enc && [401, 403, 404].includes(r.status)) return rejected;
-      let data = null; try { data = await r.json(); } catch {}
-      if (r.ok) { try { localStorage.setItem('timelineCache', JSON.stringify(items)); } catch {} }
-      return { ok: r.ok, status: r.status === 404 ? 403 : r.status, data };
-    }
-    return { ok: false, status: 409, data: { error: 'Save conflict — please try again.' } };
-  },
-  async _gh(kind, p, key) {
-    if (kind === 'list') {
-      let items;
-      try { items = (await TL.ghRead('')).items; }
-      catch (e) {
-        const r = await fetch(`${TL.GH.raw}/${TL.GH.owner}/${TL.GH.repo}/${TL.GH.branch || 'HEAD'}/${TL.GH.path}?t=${Date.now()}`, { cache: 'no-store' });
-        if (r.status === 404) items = TL.SEED.slice(); else if (!r.ok) throw e; else items = await r.json();
-      }
-      try { localStorage.setItem('timelineCache', JSON.stringify(items)); } catch {}
-      return { ok: true, status: 200, data: { items } };
-    }
-    const text = String(p.text || '').trim().slice(0, 500), date = String(p.date || '').trim();
-    if (kind !== 'remove') {
-      if (!text) return { ok: false, status: 400, data: { error: 'Text is required' } };
-      if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, status: 400, data: { error: 'Date must be YYYY-MM-DD' } };
-    }
-    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    const find = a => { const i = a.findIndex(x => x.id === p.id); if (i < 0) throw new Error('Not found'); return i; };
-    if (kind === 'add') return TL.ghWrite(a => a.concat([{ id, date, text }]), key, 'timeline: add moment');
-    if (kind === 'update') return TL.ghWrite(a => { const i = find(a); a = a.slice(); a[i] = { ...a[i], date, text }; return a; }, key, 'timeline: edit moment');
-    return TL.ghWrite(a => { const i = find(a); return a.filter((_, j) => j !== i); }, key, 'timeline: delete moment');
-  },
   bad: r => r.status === 401 || r.status === 403 || /WRONG_KEY/.test(JSON.stringify(r.data || '')),
-  err: r => (r.data && (r.data.error || r.data.message)) || 'Could not save.',
+  err: r => { const d = r.data || {}; return d.message || d.error || d.hint || ('Could not save (HTTP ' + r.status + ').'); },
   /* One entry point for both back-ends (Supabase online / node server.js locally). kind: list | add | update | remove */
   async _do(kind, p, key) {
     p = p || {};
-    if (TL.mode() === 'github') return TL._gh(kind, p, key);
     if (TL.mode() === 'supabase') {
       if (!(TL.SB.url && TL.SB.key)) throw new Error('Supabase is not set up yet');
       const H = { apikey: TL.SB.key, Authorization: 'Bearer ' + TL.SB.key, 'Content-Type': 'application/json' };
@@ -200,21 +124,16 @@ const TL = {
   },
   async mountStatus() {
     const el = document.getElementById('apiStatus'); if (!el) return;
-    const gh = TL.mode() === 'github', lab = document.querySelector('label[for="key"]');
-    if (gh && lab) lab.textContent = TL_C.GITHUB_TOKEN_ENC ? 'Admin password' : 'GitHub token (Contents: read & write, this repo only)';
-    if (TL.sb() && lab) lab.textContent = 'Admin password';
-    let ok = false; try { ok = (await TL._do('list')).ok; } catch {}
+    const lab = document.querySelector('label[for="key"]'); if (lab && TL.sb()) lab.textContent = 'Admin password';
+    let ok = false, why = ''; try { const r = await TL._do('list'); ok = r.ok; if (!ok) why = TL.err(r); } catch (e) { why = e && e.message || ''; }
     let saved = ''; try { saved = localStorage.getItem('tlApiBase') || ''; } catch {}
-    const hasKey = (() => { try { return !!sessionStorage.getItem('tlKey'); } catch { return false; } })();
     el.innerHTML = ok
-      ? `<div class="api-bar ok"><b>● Connected</b> <span>${gh ? 'GitHub · ' + TL.esc(TL.GH.owner + '/' + TL.GH.repo) + (hasKey ? '' : TL_C.GITHUB_TOKEN_ENC ? ' — enter the admin password below to add or edit' : ' — admin saving is not set up yet (see make-key.html), or paste a GitHub token below') : TL.sb() ? 'Supabase' : TL.esc(TL._base || location.origin)}</span></div>`
-      : gh
-        ? `<div class="api-bar bad"><b>● Could not read from GitHub</b> — check your internet connection (GitHub allows 60 reads/hour per network). Showing the last saved list.</div>`
-        : TL.sb()
-          ? (TL.SB.url && TL.SB.key
-            ? `<div class="api-bar bad"><b>● Supabase not reachable</b> — check SUPABASE_URL and SUPABASE_KEY in config.js, and that supabase-setup.sql was run.</div>`
-            : `<div class="api-bar bad"><b>● Supabase is not set up yet</b> — open config.js and fill <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code>. Until then, new entries are saved on this device only.</div>`)
-          : `<div class="api-bar bad"><b>● Server not reachable</b> — run <code>node server.js</code> and open <code>http://localhost:3000/timeline-admin.html</code>.<div class="api-set"><input id="apiBase" placeholder="https://your-server.com" value="${TL.esc(saved)}"><button type="button" id="apiSave">Save &amp; retry</button></div></div>`;
+      ? `<div class="api-bar ok"><b>● Connected</b> <span>${TL.sb() ? 'Supabase database' : TL.esc(TL._base || location.origin)}</span></div>`
+      : TL.sb()
+        ? (TL.SB.url && TL.SB.key
+          ? `<div class="api-bar bad"><b>● Database not reachable</b> — ${TL.esc(why)}<br>Check SUPABASE_URL and SUPABASE_KEY in config.js, and that supabase-setup.sql was run.</div>`
+          : `<div class="api-bar bad"><b>● Database is not set up yet</b> — open config.js and fill <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code> (see supabase-setup.sql). Until then, new entries are saved on this device only.</div>`)
+        : `<div class="api-bar bad"><b>● Server not reachable</b> — run <code>node server.js</code> and open <code>http://localhost:3000/timeline-admin.html</code>.<div class="api-set"><input id="apiBase" placeholder="https://your-server.com" value="${TL.esc(saved)}"><button type="button" id="apiSave">Save &amp; retry</button></div></div>`;
     const b = el.querySelector('#apiSave');
     if (b) b.onclick = () => { try { localStorage.setItem('tlApiBase', el.querySelector('#apiBase').value.trim()); } catch {} location.reload(); };
   },
