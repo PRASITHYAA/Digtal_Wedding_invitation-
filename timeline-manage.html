@@ -110,7 +110,7 @@ const TL = {
     let bases = TL._base !== null ? [TL._base] : [], last;
     if (!bases.length) {
       let s = ''; try { s = (localStorage.getItem('tlApiBase') || '').trim().replace(/\/+$/, ''); } catch {}
-      const cfg = ((window.TL_CONFIG||{}).API_BASE||'').trim().replace(//+$/, ''), dev = ['localhost','127.0.0.1',''].includes(location.hostname);
+      const cfg = String((window.TL_CONFIG||{}).API_BASE||'').trim().replace(/[/]+$/, ''), dev = ['localhost','127.0.0.1',''].includes(location.hostname);
       bases = s ? [s] : cfg ? [cfg] : dev ? ['', 'http://localhost:3000'] : [];   /* never call localhost from a deployed site */
     }
     for (const b of bases) {
