@@ -30,7 +30,6 @@
     .links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px}
     .links a{color:var(--wine);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;border:1px solid var(--gold);padding:10px 16px;text-decoration:none}
   </style>
-  <script src="config.js"></script>
 </head>
 <body>
   <header><h1>Add to Our Timeline</h1><p>Just a date and what happened</p></header>
@@ -51,8 +50,10 @@
     <div id="list"></div>
   </div>
   <div id="siteNav"></div>
+  <script src="config.js"></script>
   <script>
 /* Shared by timeline.html and timeline-admin.html */
+const TL_C = window.TL_CONFIG || {};   /* optional config.js; everything works without it */
 const TL = {
   API: '/api/timeline',
   LOCAL: 'timelineLocal',
@@ -73,7 +74,6 @@ const TL = {
     ['seed4', '2026-10-16', 'Took Ammachi to the hospital, spent the night apart, and sent each other “Miss you” messages ❤️'],
     ['seed5', '2026-10-26', 'The day Santhosh stood up for me during a fight with my mother']
   ].map(([id, date, text]) => ({ id, date, text })),
-  tfetch(u, o) { const c = new AbortController(), t = setTimeout(() => c.abort(), 8000); return fetch(u, Object.assign({}, o, { signal: c.signal })).finally(() => clearTimeout(t)); },   /* never hang forever */
   esc: s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])),
   fmt(d) {
     if (!d) return 'Where it all began';
@@ -88,30 +88,89 @@ const TL = {
     let bases = TL._base !== null ? [TL._base] : [], last;
     if (!bases.length) {
       let s = ''; try { s = (localStorage.getItem('tlApiBase') || '').trim().replace(/\/+$/, ''); } catch {}
-      const cfg = String((window.TL_CONFIG||{}).API_BASE||'').trim().replace(/[/]+$/, ''), dev = ['localhost','127.0.0.1',''].includes(location.hostname);
-      bases = s ? [s] : cfg ? [cfg] : dev ? ['', 'http://localhost:3000'] : [];   /* never call localhost from a deployed site */
+      bases = s ? [s] : TL_C.API_BASE ? [String(TL_C.API_BASE).replace(/\/+$/, '')] : ['', 'http://localhost:3000'];
     }
     for (const b of bases) {
       try {
-        const r = await TL.tfetch(b + TL.API + (q || ''), opts);
+        const r = await fetch(b + TL.API + (q || ''), opts);
         if ((r.headers.get('content-type') || '').includes('json')) { TL._base = b; return r; }
       } catch (e) { last = e; }
     }
     throw last || new Error('API not found');
   },
-  SB: { url: (window.TL_CONFIG||{}).SUPABASE_URL||'', key: (window.TL_CONFIG||{}).SUPABASE_KEY||'' },   /* ONLINE SITES: paste your Supabase Project URL and anon key here (see supabase-setup.sql) */
-  sb() { return !!(TL.SB.url && TL.SB.key); },
+  SB: { url: TL_C.SUPABASE_URL || '', key: TL_C.SUPABASE_KEY || '' },
+  GH: { owner: TL_C.GITHUB_OWNER || 'PRASITHYAA', repo: TL_C.GITHUB_REPO || 'Digtal_Wedding_invitation-', branch: TL_C.GITHUB_BRANCH || '', path: TL_C.GITHUB_PATH || 'data/timeline.json', api: TL_C.GITHUB_API || 'https://api.github.com', raw: TL_C.GITHUB_RAW || 'https://raw.githubusercontent.com' },
+  mode() {   /* github (live site, default) | supabase | node (your own computer) */
+    if (TL_C.MODE) return TL_C.MODE;
+    if (TL.SB.url && TL.SB.key) return 'supabase';
+    if (TL_C.API_BASE) return 'node';
+    return ['localhost', '127.0.0.1', ''].includes(location.hostname) ? 'node' : 'github';
+  },
+  sb() { return TL.mode() === 'supabase'; },
+  wrong: key => TL.mode() === 'github' ? (key ? 'Wrong GitHub token, or it has no permission for this repo.' : 'Paste your GitHub token in the key box first.') : 'Wrong admin key.',
+  cache() { try { return JSON.parse(localStorage.getItem('timelineCache') || 'null'); } catch { return null; } },
+  b64d: s => new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g, '')), c => c.charCodeAt(0))),
+  b64e: s => { let b = ''; new TextEncoder().encode(s).forEach(c => b += String.fromCharCode(c)); return btoa(b); },
+  /* ---- GitHub as the database: data/timeline.json in the repo ---- */
+  ghUrl: () => `${TL.GH.api}/repos/${TL.GH.owner}/${TL.GH.repo}/contents/${TL.GH.path}`,
+  async ghRead(token) {   /* -> {items, sha}; a missing file counts as the built-in list */
+    const q = (TL.GH.branch ? 'ref=' + encodeURIComponent(TL.GH.branch) + '&' : '') + 't=' + Date.now();
+    const H = { Accept: 'application/vnd.github+json' }; if (token) H.Authorization = 'Bearer ' + token;
+    const r = await fetch(TL.ghUrl() + '?' + q, { headers: H, cache: 'no-store' });
+    if (r.status === 404) return { items: TL.SEED.slice(), sha: null };
+    if (!r.ok) { const e = new Error('GitHub ' + r.status); e.status = r.status; throw e; }
+    const j = await r.json();
+    return { items: JSON.parse(TL.b64d(j.content)), sha: j.sha };
+  },
+  async ghWrite(mutate, token, message) {
+    if (!token) return { ok: false, status: 401, data: null };
+    for (let n = 0; n < 3; n++) {   /* read latest -> change -> save; retry if someone saved in between */
+      let cur; try { cur = await TL.ghRead(token); } catch (e) { if (!e.status) throw e; return { ok: false, status: e.status, data: { error: e.message } }; }   /* no status = network down -> caller saves on this device */
+      let items; try { items = mutate(cur.items); } catch (e) { return { ok: false, status: 404, data: { error: e.message } }; }
+      const body = { message, content: TL.b64e(JSON.stringify(items, null, 2) + '\n') };
+      if (cur.sha) body.sha = cur.sha; if (TL.GH.branch) body.branch = TL.GH.branch;
+      const r = await fetch(TL.ghUrl(), { method: 'PUT', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.status === 409 || r.status === 422) continue;
+      let data = null; try { data = await r.json(); } catch {}
+      if (r.ok) { try { localStorage.setItem('timelineCache', JSON.stringify(items)); } catch {} }
+      return { ok: r.ok, status: r.status === 404 ? 403 : r.status, data };
+    }
+    return { ok: false, status: 409, data: { error: 'Save conflict — please try again.' } };
+  },
+  async _gh(kind, p, key) {
+    if (kind === 'list') {
+      let items;
+      try { items = (await TL.ghRead('')).items; }
+      catch (e) {
+        const r = await fetch(`${TL.GH.raw}/${TL.GH.owner}/${TL.GH.repo}/${TL.GH.branch || 'HEAD'}/${TL.GH.path}?t=${Date.now()}`, { cache: 'no-store' });
+        if (r.status === 404) items = TL.SEED.slice(); else if (!r.ok) throw e; else items = await r.json();
+      }
+      try { localStorage.setItem('timelineCache', JSON.stringify(items)); } catch {}
+      return { ok: true, status: 200, data: { items } };
+    }
+    const text = String(p.text || '').trim().slice(0, 500), date = String(p.date || '').trim();
+    if (kind !== 'remove') {
+      if (!text) return { ok: false, status: 400, data: { error: 'Text is required' } };
+      if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, status: 400, data: { error: 'Date must be YYYY-MM-DD' } };
+    }
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const find = a => { const i = a.findIndex(x => x.id === p.id); if (i < 0) throw new Error('Not found'); return i; };
+    if (kind === 'add') return TL.ghWrite(a => a.concat([{ id, date, text }]), key, 'timeline: add moment');
+    if (kind === 'update') return TL.ghWrite(a => { const i = find(a); a = a.slice(); a[i] = { ...a[i], date, text }; return a; }, key, 'timeline: edit moment');
+    return TL.ghWrite(a => { const i = find(a); return a.filter((_, j) => j !== i); }, key, 'timeline: delete moment');
+  },
   bad: r => r.status === 401 || r.status === 403 || /WRONG_KEY/.test(JSON.stringify(r.data || '')),
   err: r => (r.data && (r.data.error || r.data.message)) || 'Could not save.',
   /* One entry point for both back-ends (Supabase online / node server.js locally). kind: list | add | update | remove */
   async _do(kind, p, key) {
     p = p || {};
-    if (TL.sb()) {
+    if (TL.mode() === 'github') return TL._gh(kind, p, key);
+    if (TL.mode() === 'supabase') {
       const H = { apikey: TL.SB.key, Authorization: 'Bearer ' + TL.SB.key, 'Content-Type': 'application/json' };
       const U = TL.SB.url.replace(/\/+$/, '') + '/rest/v1/';
       const r = kind === 'list'
-        ? await TL.tfetch(U + 'moments?select=id,date,text&order=date.asc,seq.asc', { headers: H })
-        : await TL.tfetch(U + 'rpc/' + { add: 'add_moment', update: 'update_moment', remove: 'delete_moment' }[kind], { method: 'POST', headers: H, body: JSON.stringify({ k: key || '', i: p.id || '', d: p.date || '', t: p.text || '' }) });
+        ? await fetch(U + 'moments?select=id,date,text&order=date.asc,seq.asc', { headers: H })
+        : await fetch(U + 'rpc/' + { add: 'add_moment', update: 'update_moment', remove: 'delete_moment' }[kind], { method: 'POST', headers: H, body: JSON.stringify({ k: key || '', i: p.id || '', d: p.date || '', t: p.text || '' }) });
       let data = null; try { data = await r.json(); } catch {}
       return { ok: r.ok, status: r.status, data };
     }
@@ -123,13 +182,18 @@ const TL = {
   },
   async mountStatus() {
     const el = document.getElementById('apiStatus'); if (!el) return;
+    const gh = TL.mode() === 'github', lab = document.querySelector('label[for="key"]');
+    if (gh && lab) lab.textContent = 'GitHub token (Contents: read & write, this repo only)';
     let ok = false; try { ok = (await TL._do('list')).ok; } catch {}
     let saved = ''; try { saved = localStorage.getItem('tlApiBase') || ''; } catch {}
+    const hasKey = (() => { try { return !!sessionStorage.getItem('tlKey'); } catch { return false; } })();
     el.innerHTML = ok
-      ? `<div class="api-bar ok"><b>● Server connected</b> <span>${TL.sb() ? 'Supabase' : TL.esc(TL._base || location.origin)}</span></div>`
-      : TL.sb()
-        ? `<div class="api-bar bad"><b>● Supabase not reachable</b> — entries are only saved on this device.<br>Check the Project URL and anon key in this page, and that <code>supabase-setup.sql</code> was run.</div>`
-        : `<div class="api-bar bad"><b>● Server not reachable</b> — entries are only saved on this device.<br><b>Online site (Netlify / GitHub Pages / Vercel):</b> set up Supabase using <code>supabase-setup.sql</code>.<br><b>On your computer:</b> run <code>node server.js</code>, then open <code>http://localhost:3000/timeline-admin.html</code>.<div class="api-set"><input id="apiBase" placeholder="https://your-server.com" value="${TL.esc(saved)}"><button type="button" id="apiSave">Save &amp; retry</button></div></div>`;
+      ? `<div class="api-bar ok"><b>● Connected</b> <span>${gh ? 'GitHub · ' + TL.esc(TL.GH.owner + '/' + TL.GH.repo) + (hasKey ? '' : ' — paste your GitHub token below to add or edit') : TL.sb() ? 'Supabase' : TL.esc(TL._base || location.origin)}</span></div>`
+      : gh
+        ? `<div class="api-bar bad"><b>● Could not read from GitHub</b> — check your internet connection (GitHub allows 60 reads/hour per network). Showing the last saved list.</div>`
+        : TL.sb()
+          ? `<div class="api-bar bad"><b>● Supabase not reachable</b> — check the URL and key in config.js.</div>`
+          : `<div class="api-bar bad"><b>● Server not reachable</b> — run <code>node server.js</code> and open <code>http://localhost:3000/timeline-admin.html</code>.<div class="api-set"><input id="apiBase" placeholder="https://your-server.com" value="${TL.esc(saved)}"><button type="button" id="apiSave">Save &amp; retry</button></div></div>`;
     const b = el.querySelector('#apiSave');
     if (b) b.onclick = () => { try { localStorage.setItem('tlApiBase', el.querySelector('#apiBase').value.trim()); } catch {} location.reload(); };
   },
@@ -137,15 +201,15 @@ const TL = {
     const local = TL.local();
     try {
       const r = await TL._do('list'); if (!r.ok) throw 0;
-      const server = (TL.sb() ? r.data : r.data && r.data.items) || [];
+      const server = (TL.mode() === 'supabase' ? r.data : r.data && r.data.items) || [];
       const extra = local.filter(l => !server.some(s => s.date === l.date && s.text === l.text));
       return { items: TL.sort(server.concat(extra)), online: true, localCount: extra.length };
-    } catch { return { items: TL.sort(TL.SEED.concat(local)), online: false, localCount: local.length }; }
+    } catch { return { items: TL.sort((TL.cache() || TL.SEED).concat(local)), online: false, localCount: local.length }; }
   },
   async add(date, text, key) {
     try {
       const r = await TL._do('add', { date, text }, key);
-      if (TL.bad(r)) return { ok: false, msg: 'Wrong admin key.' };
+      if (TL.bad(r)) return { ok: false, msg: TL.wrong(key) };
       if (!r.ok) return { ok: false, msg: TL.err(r) };
       return { ok: true, msg: 'Added to the timeline ✓' };
     } catch {
@@ -161,7 +225,7 @@ const TL = {
     }
     try {
       const r = await TL._do('update', { id, date, text }, key);
-      if (TL.bad(r)) return { ok: false, msg: 'Wrong admin key.' };
+      if (TL.bad(r)) return { ok: false, msg: TL.wrong(key) };
       if (!r.ok) return { ok: false, msg: TL.err(r) };
       return { ok: true, msg: 'Updated ✓' };
     } catch { return { ok: false, msg: 'Server not reachable — cannot edit right now.' }; }
@@ -170,14 +234,14 @@ const TL = {
     if (String(id).startsWith('local')) { TL.setLocal(TL.local().filter(x => x.id !== id)); return 'Deleted.'; }
     try {
       const r = await TL._do('remove', { id }, key);
-      return r.ok ? 'Deleted.' : TL.bad(r) ? 'Wrong admin key.' : 'Could not delete.';
+      return r.ok ? 'Deleted.' : TL.bad(r) ? TL.wrong(key) : 'Could not delete.';
     } catch { return 'Server not reachable.'; }
   },
   async syncLocal(key) {   /* push device-only moments to the server */
     let rest = TL.local(), done = 0;
     for (const it of TL.local()) {
       let r; try { r = await TL._do('add', { date: it.date, text: it.text }, key); } catch { r = null; }
-      if (!r || !r.ok) return { ok: false, msg: (!r ? 'Server not reachable.' : TL.bad(r) ? 'Wrong admin key.' : 'Could not sync.') + ' Synced ' + done + '.' };
+      if (!r || !r.ok) return { ok: false, msg: (!r ? 'Server not reachable.' : TL.bad(r) ? TL.wrong(key) : 'Could not sync.') + ' Synced ' + done + '.' };
       rest = rest.filter(x => x.id !== it.id); TL.setLocal(rest); done++;
     }
     return { ok: true, msg: done + ' moment(s) synced to the server ✓' };
@@ -256,13 +320,11 @@ TL.mountStatus();
     $('add').onclick = async function () {
       const text = $('text').value.trim();
       if (!text) { $('text').focus(); return; }
-      this.disabled = true; $('msg').textContent = 'Saving…';
-      try {
+      this.disabled = true;
       try { sessionStorage.setItem('tlKey', keyEl.value); } catch {}
       const r = await TL.add($('date').value, text, keyEl.value);
       $('msg').textContent = r.msg;
       if (r.ok) { $('text').value = ''; $('date').value = ''; refresh(); }
-      } catch (e) { $('msg').textContent = 'Error: ' + (e && e.message || e); }
       this.disabled = false;
     };
     $('list').onclick = async e => {

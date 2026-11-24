@@ -1,10 +1,12 @@
-/* ===== Timeline production settings — edit ONLY this file =====
-   GitHub Pages is static hosting: it cannot run server.js. Use ONE of:
-   A) Supabase (recommended, free): run supabase-setup.sql, then fill in the two values below.
-   B) Your own hosted Node server (Render/Railway/etc. running server.js): set API_BASE to its https URL.
-   Leave all empty only for local use (node server.js on http://localhost:3000). */
+/* ===== Timeline settings (optional) =====
+   Live site (GitHub Pages): the timeline is stored in the repo file data/timeline.json.
+   Everyone can READ it. To add / edit / delete, paste a GitHub token in the admin page
+   (fine-grained token, ONLY this repository, permission "Contents: Read and write").
+   NEVER put the token in this file. */
 window.TL_CONFIG = {
-  SUPABASE_URL: '',   // e.g. https://abcdxyz.supabase.co
-  SUPABASE_KEY: '',   // the "anon public" key (safe to publish)
-  API_BASE: ''        // e.g. https://my-timeline.onrender.com   (only if not using Supabase)
+  GITHUB_OWNER: 'PRASITHYAA',
+  GITHUB_REPO: 'Digtal_Wedding_invitation-',
+  GITHUB_BRANCH: '',                    // empty = the repo's default branch (usually main)
+  GITHUB_PATH: 'data/timeline.json'
+  // Optional alternatives: SUPABASE_URL + SUPABASE_KEY, or API_BASE (your own node server), or MODE: 'node'
 };
