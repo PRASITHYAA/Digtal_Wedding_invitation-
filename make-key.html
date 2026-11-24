@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Make admin key — Timeline</title>
+  <style>
+    body{font-family:Georgia,serif;background:#F8F4EA;color:#1C1712;max-width:640px;margin:0 auto;padding:30px 20px}
+    h1{color:#3A0F1B;font-weight:500}
+    label{display:block;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#8A6E3B;margin:16px 0 6px}
+    input,textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px;border:1px solid #C6A15B;border-radius:8px;background:#fffdf7}
+    button{margin-top:18px;padding:12px 20px;background:#3A0F1B;color:#E7CE94;border:0;border-radius:8px;font:inherit;cursor:pointer}
+    .out{margin-top:20px;display:none}
+    code{display:block;word-break:break-all;background:#F1E9D8;padding:12px;border-radius:8px;font-size:13px}
+    .note{font-size:14px;color:#6b1d1d}
+  </style>
+</head>
+<body>
+  <h1>Make the admin key</h1>
+  <p>Run this on your own computer (double-click the file). Nothing is sent anywhere — the token is encrypted in your browser.</p>
+  <ol>
+    <li>GitHub → Settings → Developer settings → Fine-grained tokens → Generate. Repository access: <b>only this repo</b>. Permission: <b>Contents → Read and write</b>.</li>
+    <li>Paste the token and choose your admin password below.</li>
+    <li>Copy the result into <code style="display:inline;padding:2px 6px">GITHUB_TOKEN_ENC</code> in config.js, then push.</li>
+  </ol>
+  <label for="tok">GitHub token</label>
+  <input id="tok" type="password" autocomplete="off" placeholder="github_pat_…">
+  <label for="pw">Admin password (what you type on the admin page)</label>
+  <input id="pw" type="password" autocomplete="new-password">
+  <button id="go">Encrypt</button>
+  <div class="out" id="out">
+    <label>Paste this line into config.js</label>
+    <code id="line"></code>
+    <button id="copy" type="button">Copy</button>
+    <p class="note" id="chk"></p>
+  </div>
+  <p class="note"><b>Do not use a password that is shown on any public page.</b> Anyone who knows it can decrypt the token and edit your repo. Never commit make-key.html output other than the encrypted line.</p>
+<script>
+const u8b = u => btoa(String.fromCharCode(...u)), b8u = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function kdf(pw, salt) {
+  const m = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, m, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+document.getElementById('go').onclick = async () => {
+  const tok = document.getElementById('tok').value.trim(), pw = document.getElementById('pw').value;
+  if (!tok || pw.length < 8) { alert('Enter the token and a password of at least 8 characters.'); return; }
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await kdf(pw, salt), new TextEncoder().encode(tok)));
+  const blob = 'v1.' + u8b(salt) + '.' + u8b(iv) + '.' + u8b(ct);
+  /* self-test: decrypt exactly as the site does */
+  const [, s, i, c] = blob.split('.');
+  const back = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b8u(i) }, await kdf(pw, b8u(s)), b8u(c)));
+  document.getElementById('line').textContent = "GITHUB_TOKEN_ENC: '" + blob + "'";
+  document.getElementById('chk').textContent = back === tok ? 'Self-test passed ✓' : 'Self-test FAILED — do not use.';
+  document.getElementById('out').style.display = 'block';
+};
+document.getElementById('copy').onclick = () => navigator.clipboard.writeText(document.getElementById('line').textContent);
+</script>
+</body>
+</html>

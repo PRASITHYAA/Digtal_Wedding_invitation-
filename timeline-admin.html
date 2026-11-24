@@ -27,6 +27,7 @@
     .row small{display:block;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim)}
     .row span{font-style:italic;color:var(--wine)}
     .row button{background:none;border:1px solid var(--gold);color:var(--wine);padding:4px 12px;border-radius:6px;font-size:13px}.row button.save{background:var(--wine);border-color:var(--wine);color:var(--gold-light)}.btns{display:flex;gap:6px;flex:0 0 auto}.row.edit{flex-direction:column;align-items:stretch}.row.edit input,.row.edit textarea{font-size:16px;margin-bottom:8px}.row.edit .btns{justify-content:flex-end}
+    .pw{position:relative}.pw input{padding-right:50px}.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;font-size:20px;line-height:1;padding:4px}
     .links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px}
     .links a{color:var(--wine);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;border:1px solid var(--gold);padding:10px 16px;text-decoration:none}
   </style>
@@ -40,8 +41,8 @@
       <input type="date" id="date">
       <label for="text">What happened?</label>
       <textarea id="text" rows="3" placeholder="Our first trip together ❤️"></textarea>
-      <label for="key">Admin key (if set on the server)</label>
-      <input type="password" id="key" autocomplete="current-password">
+      <label for="key">Admin password</label>
+      <div class="pw"><input type="password" id="key" autocomplete="current-password"><button type="button" class="eye" aria-label="Show password" onclick="var k=document.getElementById('key'),s=k.type==='password';k.type=s?'text':'password';this.textContent=s?'🙈':'👁';">👁</button></div>
       <button class="add" id="add">Add to Timeline</button>
       <div class="msg" id="msg" role="status"></div>
     </div>
@@ -88,7 +89,7 @@ const TL = {
     let bases = TL._base !== null ? [TL._base] : [], last;
     if (!bases.length) {
       let s = ''; try { s = (localStorage.getItem('tlApiBase') || '').trim().replace(/\/+$/, ''); } catch {}
-      bases = s ? [s] : TL_C.API_BASE ? [String(TL_C.API_BASE).replace(/\/+$/, '')] : ['', 'http://localhost:3000'];
+      bases = s ? [s] : TL_C.API_BASE ? [String(TL_C.API_BASE).replace(/\/+$/, '')] : (['localhost', '127.0.0.1', ''].includes(location.hostname) ? ['', 'http://localhost:3000'] : []);   /* never call localhost from a deployed site */
     }
     for (const b of bases) {
       try {
@@ -107,10 +108,30 @@ const TL = {
     return ['localhost', '127.0.0.1', ''].includes(location.hostname) ? 'node' : 'github';
   },
   sb() { return TL.mode() === 'supabase'; },
-  wrong: key => TL.mode() === 'github' ? (key ? 'Wrong GitHub token, or it has no permission for this repo.' : 'Paste your GitHub token in the key box first.') : 'Wrong admin key.',
+  wrong: key => TL.mode() === 'github' && TL_C.GITHUB_TOKEN_ENC ? (key ? 'Wrong admin password.' : 'Enter the admin password first.')
+    : TL.mode() === 'github' ? (key ? 'Wrong GitHub token, or it has no permission for this repo.' : 'Paste your GitHub token in the key box first.')
+    : TL.mode() === 'supabase' ? (key ? 'Wrong admin password.' : 'Enter the admin password first.') : 'Wrong admin key.',
   cache() { try { return JSON.parse(localStorage.getItem('timelineCache') || 'null'); } catch { return null; } },
   b64d: s => new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g, '')), c => c.charCodeAt(0))),
   b64e: s => { let b = ''; new TextEncoder().encode(s).forEach(c => b += String.fromCharCode(c)); return btoa(b); },
+  /* ---- password -> GitHub token: the token is stored AES-GCM encrypted in config.js (key from the password via PBKDF2) ---- */
+  u8b: u => btoa(String.fromCharCode(...u)),
+  b8u: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)),
+  async kdf(pw, salt) {
+    const m = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, m, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  },
+  async decrypt(blob, pw) {   /* blob = v1.<salt>.<iv>.<ciphertext> (base64) */
+    const [v, s, i, c] = String(blob).split('.'); if (v !== 'v1') throw new Error('bad format');
+    const k = await TL.kdf(pw, TL.b8u(s));
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: TL.b8u(i) }, k, TL.b8u(c)));
+  },
+  async ghToken(key) {
+    if (!key) return '';
+    if (!TL_C.GITHUB_TOKEN_ENC) return key;   /* nothing encrypted in config.js: the box holds a raw token */
+    if (TL._tk && TL._tk.pw === key) return TL._tk.token;
+    try { const t = await TL.decrypt(TL_C.GITHUB_TOKEN_ENC, key); TL._tk = { pw: key, token: t }; return t; } catch { return ''; }
+  },
   /* ---- GitHub as the database: data/timeline.json in the repo ---- */
   ghUrl: () => `${TL.GH.api}/repos/${TL.GH.owner}/${TL.GH.repo}/contents/${TL.GH.path}`,
   async ghRead(token) {   /* -> {items, sha}; a missing file counts as the built-in list */
@@ -123,14 +144,17 @@ const TL = {
     return { items: JSON.parse(TL.b64d(j.content)), sha: j.sha };
   },
   async ghWrite(mutate, token, message) {
+    const enc = !!TL_C.GITHUB_TOKEN_ENC, rejected = { ok: false, status: 424, data: { error: 'GitHub rejected the saved key (expired or revoked). Create a new one with make-key.html.' } };
+    token = await TL.ghToken(token);
     if (!token) return { ok: false, status: 401, data: null };
     for (let n = 0; n < 3; n++) {   /* read latest -> change -> save; retry if someone saved in between */
-      let cur; try { cur = await TL.ghRead(token); } catch (e) { if (!e.status) throw e; return { ok: false, status: e.status, data: { error: e.message } }; }   /* no status = network down -> caller saves on this device */
+      let cur; try { cur = await TL.ghRead(token); } catch (e) { if (!e.status) throw e; if (enc && (e.status === 401 || e.status === 403)) return rejected; return { ok: false, status: e.status, data: { error: e.message } }; }   /* no status = network down -> caller saves on this device */
       let items; try { items = mutate(cur.items); } catch (e) { return { ok: false, status: 404, data: { error: e.message } }; }
       const body = { message, content: TL.b64e(JSON.stringify(items, null, 2) + '\n') };
       if (cur.sha) body.sha = cur.sha; if (TL.GH.branch) body.branch = TL.GH.branch;
       const r = await fetch(TL.ghUrl(), { method: 'PUT', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (r.status === 409 || r.status === 422) continue;
+      if (enc && [401, 403, 404].includes(r.status)) return rejected;
       let data = null; try { data = await r.json(); } catch {}
       if (r.ok) { try { localStorage.setItem('timelineCache', JSON.stringify(items)); } catch {} }
       return { ok: r.ok, status: r.status === 404 ? 403 : r.status, data };
@@ -166,6 +190,7 @@ const TL = {
     p = p || {};
     if (TL.mode() === 'github') return TL._gh(kind, p, key);
     if (TL.mode() === 'supabase') {
+      if (!(TL.SB.url && TL.SB.key)) throw new Error('Supabase is not set up yet');
       const H = { apikey: TL.SB.key, Authorization: 'Bearer ' + TL.SB.key, 'Content-Type': 'application/json' };
       const U = TL.SB.url.replace(/\/+$/, '') + '/rest/v1/';
       const r = kind === 'list'
@@ -183,16 +208,19 @@ const TL = {
   async mountStatus() {
     const el = document.getElementById('apiStatus'); if (!el) return;
     const gh = TL.mode() === 'github', lab = document.querySelector('label[for="key"]');
-    if (gh && lab) lab.textContent = 'GitHub token (Contents: read & write, this repo only)';
+    if (gh && lab) lab.textContent = TL_C.GITHUB_TOKEN_ENC ? 'Admin password' : 'GitHub token (Contents: read & write, this repo only)';
+    if (TL.sb() && lab) lab.textContent = 'Admin password';
     let ok = false; try { ok = (await TL._do('list')).ok; } catch {}
     let saved = ''; try { saved = localStorage.getItem('tlApiBase') || ''; } catch {}
     const hasKey = (() => { try { return !!sessionStorage.getItem('tlKey'); } catch { return false; } })();
     el.innerHTML = ok
-      ? `<div class="api-bar ok"><b>● Connected</b> <span>${gh ? 'GitHub · ' + TL.esc(TL.GH.owner + '/' + TL.GH.repo) + (hasKey ? '' : ' — paste your GitHub token below to add or edit') : TL.sb() ? 'Supabase' : TL.esc(TL._base || location.origin)}</span></div>`
+      ? `<div class="api-bar ok"><b>● Connected</b> <span>${gh ? 'GitHub · ' + TL.esc(TL.GH.owner + '/' + TL.GH.repo) + (hasKey ? '' : TL_C.GITHUB_TOKEN_ENC ? ' — enter the admin password below to add or edit' : ' — admin saving is not set up yet (see make-key.html), or paste a GitHub token below') : TL.sb() ? 'Supabase' : TL.esc(TL._base || location.origin)}</span></div>`
       : gh
         ? `<div class="api-bar bad"><b>● Could not read from GitHub</b> — check your internet connection (GitHub allows 60 reads/hour per network). Showing the last saved list.</div>`
         : TL.sb()
-          ? `<div class="api-bar bad"><b>● Supabase not reachable</b> — check the URL and key in config.js.</div>`
+          ? (TL.SB.url && TL.SB.key
+            ? `<div class="api-bar bad"><b>● Supabase not reachable</b> — check SUPABASE_URL and SUPABASE_KEY in config.js, and that supabase-setup.sql was run.</div>`
+            : `<div class="api-bar bad"><b>● Supabase is not set up yet</b> — open config.js and fill <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code>. Until then, new entries are saved on this device only.</div>`)
           : `<div class="api-bar bad"><b>● Server not reachable</b> — run <code>node server.js</code> and open <code>http://localhost:3000/timeline-admin.html</code>.<div class="api-set"><input id="apiBase" placeholder="https://your-server.com" value="${TL.esc(saved)}"><button type="button" id="apiSave">Save &amp; retry</button></div></div>`;
     const b = el.querySelector('#apiSave');
     if (b) b.onclick = () => { try { localStorage.setItem('tlApiBase', el.querySelector('#apiBase').value.trim()); } catch {} location.reload(); };
@@ -214,7 +242,7 @@ const TL = {
       return { ok: true, msg: 'Added to the timeline ✓' };
     } catch {
       TL.saveLocal({ id: 'local' + Date.now(), date, text });
-      return { ok: true, msg: 'Server not reachable — saved on this device only.' };
+      return { ok: true, msg: (TL.sb() && !(TL.SB.url && TL.SB.key) ? 'Supabase is not set up yet (see config.js)' : 'Server not reachable') + ' — saved on this device only.' };
     }
   },
   setLocal(a) { try { localStorage.setItem(TL.LOCAL, JSON.stringify(a)); } catch {} },
@@ -234,7 +262,7 @@ const TL = {
     if (String(id).startsWith('local')) { TL.setLocal(TL.local().filter(x => x.id !== id)); return 'Deleted.'; }
     try {
       const r = await TL._do('remove', { id }, key);
-      return r.ok ? 'Deleted.' : TL.bad(r) ? TL.wrong(key) : 'Could not delete.';
+      return r.ok ? 'Deleted.' : TL.bad(r) ? TL.wrong(key) : (r.data && r.data.error) || 'Could not delete.';
     } catch { return 'Server not reachable.'; }
   },
   async syncLocal(key) {   /* push device-only moments to the server */
@@ -308,7 +336,7 @@ TL.mountStatus();
   </script>
   <script>
     const $ = id => document.getElementById(id), keyEl = $('key');
-    keyEl.value = (() => { try { return sessionStorage.getItem('tlKey'); } catch { return ''; } })() || '';
+    keyEl.value = (() => { try { return sessionStorage.getItem('tlKey'); } catch { return ''; } })() || (['localhost', '127.0.0.1', ''].includes(location.hostname) ? 'Dhanu@5130' : '');   /* prefill on your own computer only: on the live site it would reveal the password that unlocks the encrypted GitHub token */
     let items = [], editId = '';
     function draw() {
       $('list').innerHTML = items.map(i => i.id === editId
