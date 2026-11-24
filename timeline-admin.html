@@ -73,6 +73,7 @@ const TL = {
     ['seed4', '2026-10-16', 'Took Ammachi to the hospital, spent the night apart, and sent each other “Miss you” messages ❤️'],
     ['seed5', '2026-10-26', 'The day Santhosh stood up for me during a fight with my mother']
   ].map(([id, date, text]) => ({ id, date, text })),
+  tfetch(u, o) { const c = new AbortController(), t = setTimeout(() => c.abort(), 8000); return fetch(u, Object.assign({}, o, { signal: c.signal })).finally(() => clearTimeout(t)); },   /* never hang forever */
   esc: s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])),
   fmt(d) {
     if (!d) return 'Where it all began';
@@ -92,7 +93,7 @@ const TL = {
     }
     for (const b of bases) {
       try {
-        const r = await fetch(b + TL.API + (q || ''), opts);
+        const r = await TL.tfetch(b + TL.API + (q || ''), opts);
         if ((r.headers.get('content-type') || '').includes('json')) { TL._base = b; return r; }
       } catch (e) { last = e; }
     }
@@ -109,8 +110,8 @@ const TL = {
       const H = { apikey: TL.SB.key, Authorization: 'Bearer ' + TL.SB.key, 'Content-Type': 'application/json' };
       const U = TL.SB.url.replace(/\/+$/, '') + '/rest/v1/';
       const r = kind === 'list'
-        ? await fetch(U + 'moments?select=id,date,text&order=date.asc,seq.asc', { headers: H })
-        : await fetch(U + 'rpc/' + { add: 'add_moment', update: 'update_moment', remove: 'delete_moment' }[kind], { method: 'POST', headers: H, body: JSON.stringify({ k: key || '', i: p.id || '', d: p.date || '', t: p.text || '' }) });
+        ? await TL.tfetch(U + 'moments?select=id,date,text&order=date.asc,seq.asc', { headers: H })
+        : await TL.tfetch(U + 'rpc/' + { add: 'add_moment', update: 'update_moment', remove: 'delete_moment' }[kind], { method: 'POST', headers: H, body: JSON.stringify({ k: key || '', i: p.id || '', d: p.date || '', t: p.text || '' }) });
       let data = null; try { data = await r.json(); } catch {}
       return { ok: r.ok, status: r.status, data };
     }
@@ -255,11 +256,13 @@ TL.mountStatus();
     $('add').onclick = async function () {
       const text = $('text').value.trim();
       if (!text) { $('text').focus(); return; }
-      this.disabled = true;
+      this.disabled = true; $('msg').textContent = 'Saving…';
+      try {
       try { sessionStorage.setItem('tlKey', keyEl.value); } catch {}
       const r = await TL.add($('date').value, text, keyEl.value);
       $('msg').textContent = r.msg;
       if (r.ok) { $('text').value = ''; $('date').value = ''; refresh(); }
+      } catch (e) { $('msg').textContent = 'Error: ' + (e && e.message || e); }
       this.disabled = false;
     };
     $('list').onclick = async e => {
