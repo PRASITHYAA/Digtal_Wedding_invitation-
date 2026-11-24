@@ -226,6 +226,7 @@
       color: var(--noir);
     }
 
+
     .story-footer {
       text-align: center;
       padding: 40px 20px 60px;
@@ -435,6 +436,7 @@
       .scratch-section {
         padding: 44px 16px;
       }
+
     }
 
     @media (max-width: 380px) {
@@ -453,6 +455,12 @@
         min-height: 75vh;
       }
     }
+
+    /* Kept in the markup but not shown - remove the class to reveal the link */
+    .hidden-link {
+      display: none !important;
+    }
+  .site-nav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:26px 16px 34px;background:#081C16}.site-nav a{padding:10px 18px;border:1px solid #C6A15B;color:#E7CE94;text-decoration:none;font:500 12.5px 'EB Garamond',serif;letter-spacing:.16em;text-transform:uppercase;transition:.25s}.site-nav a:hover,.site-nav a[aria-current]{background:#C6A15B;color:#0B0B0D}
   </style>
 </head>
 
@@ -488,11 +496,6 @@
         <img src="image/groom-portrait.jpg" alt="Santhosh portrait">
         <img src="image/ChatGPT Image Aug 4, 2026, 07_37_27 PM.png" alt="Prasithya and Santhosh together">
       </div>
-
-      <div class="story-btn-row">
-        <a href="/Coupleshare.html" class="story-btn filled">View the Messages</a>
-        <a href="index.html" class="story-btn">Back to Invitation</a>
-      </div>
     </div>
   </section>
 
@@ -520,6 +523,8 @@
     <div class="sig-love">With love,</div>
     <div class="sig-names">Santhosh &amp; Prasithya</div>
   </div>
+
+<nav class="site-nav" aria-label="Explore"><a href="index.html">Invitation</a><a href="lovestory.html" aria-current="page">Our Love Story</a><a href="timeline.html">View Timeline</a><a href="timeline-admin.html">Add Timeline</a><a href="timeline-manage.html">Admin</a></nav>
 
   <script>
     /* ===================== RANDOM LOVE STORY QUOTE ===================== */

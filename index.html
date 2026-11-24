@@ -1027,6 +1027,7 @@
       font-family: var(--serif);
       font-style: italic;
       font-size: 22px;
+      line-height: 1.7;
       color: var(--wine);
       margin-top: 28px;
     }
@@ -1536,6 +1537,70 @@
       color: var(--noir);
     }
 
+    /* ---- Voice dictation for the message box ---- */
+    .msg-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .thought-form button.mic-btn {
+      margin-top: 0;
+      width: auto;
+      flex: 0 0 auto;
+      padding: 7px 14px 7px 11px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 10.5px;
+      letter-spacing: .16em;
+      border-color: var(--gold-dim);
+    }
+
+    .mic-btn svg {
+      width: 13px;
+      height: 13px;
+      display: block;
+      fill: currentColor;
+    }
+
+    .mic-btn.listening,
+    .mic-btn.speaking {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--noir);
+      animation: micPulse 1.4s ease-in-out infinite;
+    }
+
+    .msg-tools {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    @keyframes micPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(198, 161, 91, .45);
+      }
+
+      50% {
+        box-shadow: 0 0 0 7px rgba(198, 161, 91, 0);
+      }
+    }
+
+    .mic-status {
+      min-height: 16px;
+      margin-top: 8px;
+      font-family: var(--sans);
+      font-size: 11px;
+      letter-spacing: .06em;
+      color: var(--gold);
+      opacity: .85;
+    }
+
     #coupleshare {
       display: none;
       background: var(--ivory);
@@ -1566,6 +1631,55 @@
       color: var(--wine);
       font-family: var(--serif);
       font-size: 18px;
+    }
+
+    /* ---- Listen to a shared message (audio only) ---- */
+    .share-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hear-btn {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 6px 10px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--wine);
+      font-family: var(--sans);
+      font-size: 10.5px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: .25s;
+    }
+
+    .hear-btn svg {
+      width: 12px;
+      height: 12px;
+      display: block;
+      fill: currentColor;
+    }
+
+    .hear-btn:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--noir);
+    }
+
+    .hear-btn.speaking {
+      background: var(--wine);
+      border-color: var(--wine);
+      color: var(--gold-light);
+    }
+
+    .hear-btn[hidden] {
+      display: none;
     }
 
     .share-message p {
@@ -1690,7 +1804,7 @@
 
     /* ---- Photos + gallery ---- */
     #hero {
-      background-image: url("image/couple-candle.png");
+      background-image: url("./image/couple-candle.png");
     }
 
     #couplePhotos {
@@ -1873,6 +1987,12 @@
         font-size: 12.5px;
       }
     }
+
+    /* Kept in the markup but not shown - remove the class to reveal the link */
+    .hidden-link {
+      display: none !important;
+    }
+  .site-nav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:26px 16px 34px;background:#081C16}.site-nav a{padding:10px 18px;border:1px solid #C6A15B;color:#E7CE94;text-decoration:none;font:500 12.5px 'EB Garamond',serif;letter-spacing:.16em;text-transform:uppercase;transition:.25s}.site-nav a:hover,.site-nav a[aria-current]{background:#C6A15B;color:#0B0B0D}
   </style>
 </head>
 
@@ -1885,7 +2005,7 @@
   <div id="gate">
     <div class="gate-scrim"></div>
     <button class="gate-photo" id="inviteBtn" aria-label="Open the invitation">
-      <img src="ChatGPT Image Aug 4, 2026, 06_54_18 PM.png" alt="Santhosh and Prasithya holding flowers">
+      <img src="image/ChatGPT Image Aug 4, 2026, 06_54_18 PM.png" alt="Santhosh and Prasithya holding flowers">
       <div class="falling-flowers" aria-hidden="true">
         <span></span><span></span><span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -1940,11 +2060,11 @@
         <div class="photo-duo">
 
           <figure class="photo-panel">
-            <img src="groom-portrait.jpg" alt="Portrait artwork of Santhosh" loading="lazy">
+            <img src="image/groom-portrait.jpg" alt="Portrait artwork of Santhosh" loading="lazy">
             <figcaption class="photo-label">Santhosh</figcaption>
           </figure>
           <figure class="photo-panel">
-            <img src="ChatGPT Image Aug 4, 2026, 07_37_27 PM.png"
+            <img src="image/ChatGPT Image Aug 4, 2026, 07_37_27 PM.png"
               alt="Prasithya and Santhosh smiling together by candlelight" loading="lazy">
             <figcaption class="photo-label">Prasithya</figcaption>
           </figure>
@@ -1957,8 +2077,8 @@
       <div class="mandala-mark light" style="width:280px;height:280px;top:-60px;right:-60px;"></div>
       <div class="mandala-mark light" style="width:280px;height:280px;bottom:-60px;left:-60px;"></div>
       <div class="wrap">
-        <div class="eyebrow">Save the Date</div>
-        <h2 class="section-title">Counting Down to the Big Day</h2>
+        <div class="eyebrow" id="cdEyebrow">Save the Date</div>
+        <h2 class="section-title" id="cdTitle">Counting Down to the Big Day</h2>
         <div class="diamond-flourish"><span class="dot"></span></div>
         <div class="countdown-row" id="countdownRow">
           <div class="cd-box">
@@ -2010,13 +2130,13 @@
         <h2 class="section-title">Moments of Love</h2>
         <div class="diamond-flourish"><span class="dot"></span></div>
         <div class="gallery-grid">
-          <div class="gallery-item"><img src="collect-moments.png" alt="Candlelight couple portrait" loading="lazy">
+          <div class="gallery-item"><img src="image/collect-moments.png" alt="Candlelight couple portrait" loading="lazy">
           </div>
-          <div class="gallery-item"><img src="couple-candle.png" alt="Collect moments couple artwork" loading="lazy">
+          <div class="gallery-item"><img src="image/couple-candle.png" alt="Collect moments couple artwork" loading="lazy">
           </div>
-          <div class="gallery-item"><img src="future-love copy.jpg" alt="Future and love couple artwork" loading="lazy">
+          <div class="gallery-item"><img src="image/future-love copy.jpg" alt="Future and love couple artwork" loading="lazy">
           </div>
-          <div class="gallery-item"><img src="ChatGPT Image Aug 4, 2026, 06_54_18 PM.png"
+          <div class="gallery-item"><img src="image/ChatGPT Image Aug 4, 2026, 06_54_18 PM.png"
               alt="Santhosh portrait artwork" loading="lazy">
           </div>
           <!-- <div class="gallery-item"><img src="image/moments-roses.jpeg" alt="Alternate candlelight couple portrait"
@@ -2087,40 +2207,6 @@
       </div>
     </section>
 
-    <section id="thoughts" class="center">
-      <div class="wrap">
-        <div class="eyebrow">For the Couple</div>
-        <h2 class="section-title">Share Your Thoughts</h2>
-        <div class="diamond-flourish"><span class="dot"></span></div>
-        <div class="thought-form">
-          <label>Send your wishes to</label>
-          <div class="recipient-row">
-            <div class="recipient-pill active" data-phone="919095942722" data-name="Santhosh">
-              <span class="r-role">Groom</span>Santhosh
-            </div>
-            <div class="recipient-pill" data-phone="919952215358" data-name="Prasithya">
-              <span class="r-role">Bride</span>Prasithya
-            </div>
-          </div>
-          <label for="thoughtName" style="display:block;margin-top:22px;">Your name</label>
-          <input type="text" id="thoughtName" placeholder="e.g. Priya">
-          <label for="thoughtMsg" style="display:block;margin-top:22px;">Your message</label>
-          <textarea id="thoughtMsg" rows="4" placeholder="Write your wishes for Santhosh & Prasithya..."></textarea>
-          <button id="sendThought" type="button">Send Message</button>
-          <!-- <a class="btn" href="/Coupleshare.html" style="display:block;margin-top:16px;text-align:center;">View Shared Messages</a> -->
-        </div>
-      </div>
-    </section>
-
-    <section id="coupleshare" class="center">
-      <div class="wrap">
-        <div class="eyebrow">Couple Share</div>
-        <h2 class="section-title">Shared Messages</h2>
-        <div class="diamond-flourish"><span class="dot"></span></div>
-        <div class="share-list" id="shareList"></div>
-      </div>
-    </section>
-
     <div id="signature">
       <div class="wrap">
         <div class="sig-love" style="padding-top: 10px;">With love,</div>
@@ -2137,6 +2223,7 @@
         </div>
       </div>
     </div>
+    <nav class="site-nav" aria-label="Explore"><a href="index.html" aria-current="page">Invitation</a><a href="lovestory.html">Our Love Story</a><a href="timeline.html">View Timeline</a><a href="timeline-admin.html">Add Timeline</a><a href="timeline-manage.html">Admin</a></nav>
     <!-- 
     <footer>
       <div class="wrap center">
@@ -2161,75 +2248,6 @@
   </main>
 
   <script>
-    const COUPLE_SHARE_API = '/api/Coupleshare';
-    const LOCAL_SHARE_KEY = 'coupleShareMessages';
-
-    function escapeHtml(value) {
-      return String(value || '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      }[char]));
-    }
-
-    function readLocalSharedMessages() {
-      try {
-        return JSON.parse(localStorage.getItem(LOCAL_SHARE_KEY) || '[]');
-      } catch (err) {
-        return [];
-      }
-    }
-
-    function saveLocalSharedMessage(message) {
-      const messages = readLocalSharedMessages();
-      messages.unshift(message);
-      localStorage.setItem(LOCAL_SHARE_KEY, JSON.stringify(messages.slice(0, 100)));
-    }
-
-    async function renderSharedMessages() {
-      const list = document.getElementById('shareList');
-      if (!list) return;
-      list.innerHTML = '<div class="share-message"><strong>Loading messages...</strong></div>';
-      let messages = [];
-      try {
-        const response = await fetch(COUPLE_SHARE_API, { method: 'GET' });
-        if (!response.ok) throw new Error('Unable to load messages');
-        const data = await response.json();
-        messages = Array.isArray(data) ? data : (data.messages || []);
-      } catch (err) {
-        messages = readLocalSharedMessages();
-      }
-      if (!messages.length) {
-        list.innerHTML = '<div class="share-message"><strong>No messages yet</strong><p>Shared wishes will appear here after guests send them.</p></div>';
-        return;
-      }
-      list.innerHTML = messages.map(item => `
-        <article class="share-message">
-          <strong>${escapeHtml(item.name || 'Guest')}</strong>
-          <p>${escapeHtml(item.message)}</p>
-          <small>For ${escapeHtml(item.to || 'the couple')} - ${escapeHtml(item.date || '')}</small>
-        </article>
-      `).join('');
-    }
-
-    (function () {
-      const path = location.pathname.toLowerCase();
-      const search = new URLSearchParams(location.search);
-      if (!path.endsWith('/coupleshare') && !path.endsWith('/coupleshare.html') && !search.has('coupleshare')) return;
-      document.body.classList.remove('locked');
-      document.getElementById('gate').style.display = 'none';
-      document.getElementById('main').classList.add('show');
-      document.querySelectorAll('main > section').forEach(section => {
-        section.style.display = section.id === 'coupleshare' ? 'block' : 'none';
-      });
-      const footer = document.querySelector('footer');
-      if (footer) footer.style.display = 'block';
-      document.getElementById('coupleshare').classList.add('is-active');
-      renderSharedMessages();
-    })();
-
     /* ===================== GATE OPEN ===================== */
     (function () {
       const gate = document.getElementById('gate');
@@ -2299,6 +2317,7 @@
       const weddingEnd = new Date("2026-08-24T00:00:00+05:30");
       const row = document.getElementById('countdownRow');
       const marriedEl = document.getElementById('cdMarried');
+      const eyebrow = document.getElementById('cdEyebrow'), title = document.getElementById('cdTitle');
       const dEl = document.getElementById('cdDays'), hEl = document.getElementById('cdHours'),
         mEl = document.getElementById('cdMins'), sEl = document.getElementById('cdSecs');
 
@@ -2317,13 +2336,21 @@
           row.style.display = 'none'; marriedEl.style.display = 'block';
           marriedEl.textContent = '💍 The celebrations are underway!';
         } else {
-          row.style.display = 'none'; marriedEl.style.display = 'block';
+          /* Wedding is over: count UP from the big day and show a heartfelt sentence */
+          row.style.display = 'flex'; marriedEl.style.display = 'block';
+          eyebrow.textContent = 'Happily Married';
+          title.textContent = 'Counting from the Big Day';
           const diff = now - weddingStart;
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
           const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
           const mins = Math.floor((diff / (1000 * 60)) % 60);
           const secs = Math.floor((diff / 1000) % 60);
-          marriedEl.textContent = `🎉 Married for ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`;
+          dEl.textContent = pad(days); hEl.textContent = pad(hours);
+          mEl.textContent = pad(mins); sEl.textContent = pad(secs);
+          const u = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+          marriedEl.innerHTML = '💍 Our wedding is complete, and our forever has begun.<br>' +
+            'It has been ' + u(days, 'day') + ', ' + u(hours, 'hour') + ', ' + u(mins, 'minute') + ' and ' + u(secs, 'second') +
+            ' since we became one — thank you for being part of our story.';
         }
       }
       tick();
@@ -2476,64 +2503,24 @@
     /* ===================== GPAY QR ===================== */
     (function () {
       const upiId = "prasithya.santhosh@upi";
-      const fakeQrText = "This wedding QR is just for fun. Please do not send money.";
+      /* Scanning the QR reveals a line from our love story - not a payment request */
+      const storyLines = [
+        "The day we met, our two stories quietly became one.",
+        "Every small moment we shared was building something forever.",
+        "Friendship gave us trust; love gave us a future.",
+        "We found in each other the person we didn't know we were looking for.",
+        "Our story isn't loud - it's steady, warm, and ours.",
+        "From quiet conversations to a lifetime together.",
+        "The best chapters of our story are still unwritten.",
+        "You turned an ordinary day into the beginning of everything."
+      ];
+      const line = storyLines[Math.floor(Math.random() * storyLines.length)];
+      const fakeQrText = `${line}\n\n- Santhosh & Prasithya\n\nThis wedding QR is just for fun. Please do not send money.`;
       const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(fakeQrText)}`;
       document.getElementById('gpayQr').src = qrSrc;
       document.getElementById('upiIdText').textContent = upiId;
     })();
 
-    /* ===================== WHATSAPP SHARE ===================== */
-    (function () {
-      const pills = document.querySelectorAll('.recipient-pill');
-      let selected = { phone: pills[0].dataset.phone, name: pills[0].dataset.name };
-
-      pills.forEach(pill => {
-        pill.addEventListener('click', () => {
-          pills.forEach(p => p.classList.remove('active'));
-          pill.classList.add('active');
-          selected = { phone: pill.dataset.phone, name: pill.dataset.name };
-        });
-      });
-
-      document.getElementById('sendThought').addEventListener('click', async function () {
-        const senderName = document.getElementById('thoughtName').value.trim();
-        const msg = document.getElementById('thoughtMsg').value.trim();
-        if (!msg) { document.getElementById('thoughtMsg').focus(); return; }
-        const payload = {
-          name: senderName || 'Guest',
-          message: msg,
-          to: selected.name,
-          date: new Date().toLocaleString()
-        };
-        this.disabled = true;
-        this.textContent = 'Sending...';
-        try {
-          const response = await fetch(COUPLE_SHARE_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (!response.ok) throw new Error('Unable to send message');
-        } catch (err) {
-          saveLocalSharedMessage(payload);
-        }
-        renderSharedMessages();
-        document.getElementById('thoughtName').value = '';
-        document.getElementById('thoughtMsg').value = '';
-        alert('Your message has been sent successfully.');
-        this.disabled = false;
-        this.textContent = 'Send Message';
-        return;
-        const fullMsg = (senderName
-          ? `For your wedding wishes 💛\n\nMessage from ${senderName} to ${selected.name}:\n\n`
-          : `For your wedding wishes 💛\n\nMessage to ${selected.name}:\n\n`) + msg;
-        const cleanMsg = fullMsg.replace(/[^\x00-\x7F]/g, '');
-        const url = `https://wa.me/${selected.phone}?text=${encodeURIComponent(cleanMsg)}`;
-        window.open(url, '_blank');
-        this.disabled = false;
-        this.textContent = 'Send Message';
-      });
-    })();
   </script>
 </body>
 

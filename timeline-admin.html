@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Add to Timeline — Santhosh &amp; Prasithya</title>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root{--gold:#C6A15B;--gold-light:#E7CE94;--gold-dim:#8A6E3B;--ivory:#F8F4EA;--ivory-warm:#F1E9D8;--wine:#3A0F1B;--ink:#1C1712;--serif:'EB Garamond',serif}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--serif);background:var(--ivory);color:var(--ink)}
+    header{background:var(--wine);color:var(--gold-light);text-align:center;padding:44px 20px 30px}
+    header h1{font-weight:500;font-size:clamp(26px,5vw,38px)}
+    header p{font-style:italic;opacity:.85;margin-top:6px}
+    .wrap{max-width:640px;margin:0 auto;padding:34px 20px 50px}
+    .card{background:var(--ivory-warm);border:1px solid rgba(198,161,91,.5);border-radius:14px;padding:20px}
+    label{display:block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);margin:14px 0 6px}
+    label:first-child{margin-top:0}
+    input,textarea{width:100%;font:inherit;font-size:18px;padding:10px 12px;border:1px solid var(--gold);background:#fffdf7;color:var(--ink);border-radius:8px}
+    button{font:inherit;cursor:pointer}
+    .add{margin-top:18px;width:100%;padding:13px;background:var(--wine);color:var(--gold-light);border:1px solid var(--wine);letter-spacing:.18em;text-transform:uppercase;font-size:13px}
+    .add:disabled{opacity:.6}
+    .msg{min-height:22px;margin-top:10px;text-align:center;font-style:italic;color:var(--wine)}
+    h2{font-weight:500;color:var(--wine);margin:34px 0 12px;font-size:22px}
+    .row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;background:var(--ivory-warm);border:1px solid rgba(198,161,91,.4);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+    .row small{display:block;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim)}
+    .row span{font-style:italic;color:var(--wine)}
+    .row button{background:none;border:1px solid var(--gold);color:var(--wine);padding:4px 12px;border-radius:6px;font-size:13px}.row button.save{background:var(--wine);border-color:var(--wine);color:var(--gold-light)}.btns{display:flex;gap:6px;flex:0 0 auto}.row.edit{flex-direction:column;align-items:stretch}.row.edit input,.row.edit textarea{font-size:16px;margin-bottom:8px}.row.edit .btns{justify-content:flex-end}
+    .links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+    .links a{color:var(--wine);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;border:1px solid var(--gold);padding:10px 16px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <header><h1>Add to Our Timeline</h1><p>Just a date and what happened</p></header>
+  <div class="wrap">
+    <div class="card">
+      <label for="date">Date (leave empty if unknown)</label>
+      <input type="date" id="date">
+      <label for="text">What happened?</label>
+      <textarea id="text" rows="3" placeholder="Our first trip together ❤️"></textarea>
+      <label for="key">Admin key (if set on the server)</label>
+      <input type="password" id="key" autocomplete="current-password">
+      <button class="add" id="add">Add to Timeline</button>
+      <div class="msg" id="msg" role="status"></div>
+    </div>
+    <h2>Moments so far</h2>
+    <div id="syncBox"></div>
+    <div id="list"></div>
+  </div>
+  <div id="siteNav"></div>
+  <script src="timeline.js"></script>
+  <script>
+    const $ = id => document.getElementById(id), keyEl = $('key');
+    keyEl.value = sessionStorage.getItem('tlKey') || '';
+    let items = [], editId = '';
+    function draw() {
+      $('list').innerHTML = items.map(i => i.id === editId
+        ? `<div class="row edit"><input type="date" class="e-date" value="${TL.esc(i.date)}"><textarea class="e-text" rows="2">${TL.esc(i.text)}</textarea><div class="btns"><button class="cancel">Cancel</button><button class="save" data-id="${TL.esc(i.id)}">Save</button></div></div>`
+        : `<div class="row"><div><small>${TL.esc(TL.fmt(i.date))}</small><span>${TL.esc(i.text)}</span></div><div class="btns"><button class="edit" data-id="${TL.esc(i.id)}">Edit</button><button class="del" data-id="${TL.esc(i.id)}">Delete</button></div></div>`
+      ).join('') || '<p>Nothing yet.</p>';
+    }
+    async function refresh() { items = (await TL.load()).items; draw(); TL.syncBanner($('syncBox'), keyEl, refresh); }
+    $('add').onclick = async function () {
+      const text = $('text').value.trim();
+      if (!text) { $('text').focus(); return; }
+      this.disabled = true;
+      sessionStorage.setItem('tlKey', keyEl.value);
+      const r = await TL.add($('date').value, text, keyEl.value);
+      $('msg').textContent = r.msg;
+      if (r.ok) { $('text').value = ''; $('date').value = ''; refresh(); }
+      this.disabled = false;
+    };
+    $('list').onclick = async e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('edit')) { editId = b.dataset.id; $('msg').textContent = ''; draw(); }
+      else if (b.classList.contains('cancel')) { editId = ''; draw(); }
+      else if (b.classList.contains('save')) {
+        const row = b.closest('.row'), text = row.querySelector('.e-text').value.trim();
+        if (!text) { row.querySelector('.e-text').focus(); return; }
+        sessionStorage.setItem('tlKey', keyEl.value);
+        const r = await TL.update(b.dataset.id, row.querySelector('.e-date').value, text, keyEl.value);
+        $('msg').textContent = r.msg;
+        if (r.ok) { editId = ''; refresh(); }
+      } else if (b.classList.contains('del')) {
+        if (!confirm('Delete this moment?')) return;
+        $('msg').textContent = await TL.remove(b.dataset.id, keyEl.value); refresh();
+      }
+    };
+    refresh();
+  </script>
+</body>
+</html>

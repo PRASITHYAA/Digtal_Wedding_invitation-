@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Our Timeline — Santhosh &amp; Prasithya</title>
+  <meta name="theme-color" content="#3A0F1B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root{--noir:#0B0B0D;--emerald-deep:#081C16;--gold:#C6A15B;--gold-light:#E7CE94;--gold-dim:#8A6E3B;--ivory:#F8F4EA;--ivory-warm:#F1E9D8;--wine:#3A0F1B;--ink:#1C1712;--serif:'EB Garamond',serif}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--serif);background:var(--ivory);color:var(--ink);overflow-x:hidden}
+    .hero{background:var(--wine);color:var(--ivory);text-align:center;padding:70px 20px 46px}
+    .eyebrow{font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--gold)}
+    h1{font-size:clamp(30px,6vw,48px);color:var(--gold-light);margin-top:12px;font-weight:500}
+    .sub{font-style:italic;margin-top:8px;opacity:.9}
+    .wrap{max-width:680px;margin:0 auto;padding:50px 20px 30px}
+    .tl{list-style:none;position:relative;padding-left:34px}
+    .tl::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:1px;background:linear-gradient(var(--gold),var(--gold-dim))}
+    .tl-item{position:relative;background:var(--ivory-warm);border:1px solid rgba(198,161,91,.5);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+    .tl-dot{position:absolute;left:-31px;top:22px;width:11px;height:11px;background:var(--gold);transform:rotate(45deg)}
+    .tl-date{font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:var(--gold-dim);font-weight:500}
+    .tl-item p{font-style:italic;font-size:clamp(17px,2.4vw,20px);line-height:1.6;color:var(--wine);margin-top:6px}
+    .note{text-align:center;font-size:13px;color:var(--gold-dim);margin-top:6px;min-height:18px}
+    .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;padding:10px 20px 50px}
+    .btn{padding:12px 24px;border:1px solid var(--gold);color:var(--wine);text-decoration:none;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;transition:.25s}
+    .btn:hover{background:var(--gold);color:var(--noir)}
+    .btn.filled{background:var(--wine);border-color:var(--wine);color:var(--gold-light)}
+    footer{background:var(--emerald-deep);color:var(--gold-light);text-align:center;padding:34px 20px;font-style:italic}
+    footer b{display:block;font-style:normal;font-weight:500;font-size:24px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="eyebrow">Moment by Moment</div>
+    <h1>Our Timeline</h1>
+    <p class="sub">Santhosh &amp; Prasithya</p>
+  </section>
+  <div class="wrap">
+    <div id="tl"><p class="note">Loading…</p></div>
+    <div class="note" id="note"></div>
+  </div>
+  <footer>With love,<b>Santhosh &amp; Prasithya</b></footer>
+  <div id="siteNav"></div>
+  <script src="timeline.js"></script>
+  <script>
+    TL.load().then(({ items, online, localCount }) => {
+      document.getElementById('tl').innerHTML = TL.group(items);
+      if (online && localCount) document.getElementById('note').textContent = 'Includes ' + localCount + ' moment(s) saved on this device only.';
+      if (!online) document.getElementById('note').textContent = 'Showing saved moments (live timeline not reachable).';
+    });
+  </script>
+</body>
+</html>
