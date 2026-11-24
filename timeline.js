@@ -42,7 +42,7 @@ const TL = {
       const r = await fetch(TL.API, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': key || '' }, body: JSON.stringify({ date, text }) });
       if (r.status === 401) return { ok: false, msg: 'Wrong admin key.' };
       if (!r.ok) return { ok: false, msg: (await r.json()).error || 'Could not save.' };
-      return { ok: true, msg: 'Added to the timeline ✓' };
+      return { ok: true, item: await r.json(), msg: 'Added to the timeline ✓' };
     } catch {
       TL.saveLocal({ id: 'local' + Date.now(), date, text });
       return { ok: true, msg: 'API not reachable — saved on this device only.' };
@@ -58,8 +58,23 @@ const TL = {
       const r = await fetch(TL.API + '?id=' + encodeURIComponent(id), { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-admin-key': key || '' }, body: JSON.stringify({ date, text }) });
       if (r.status === 401) return { ok: false, msg: 'Wrong admin key.' };
       if (!r.ok) return { ok: false, msg: (await r.json()).error || 'Could not update.' };
-      return { ok: true, msg: 'Updated ✓' };
+      return { ok: true, item: await r.json(), msg: 'Updated ✓' };
     } catch { return { ok: false, msg: 'API not reachable — start server.js to edit.' }; }
+  },
+  async watch(onChange, interval = 3000) {
+    let stopped = false, last = '';
+    const poll = async () => {
+      if (stopped) return;
+      try {
+        const r = await fetch(TL.API, { cache: 'no-store' });
+        if (!r.ok) return;
+        const data = await r.json(), signature = JSON.stringify(data.items || []);
+        if (signature !== last) { last = signature; onChange(data.items || []); }
+      } catch {}
+    };
+    await poll();
+    const timer = setInterval(poll, interval);
+    return () => { stopped = true; clearInterval(timer); };
   },
   async remove(id, key) {
     if (String(id).startsWith('local')) { TL.setLocal(TL.local().filter(x => x.id !== id)); return 'Deleted.'; }

@@ -49,6 +49,11 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+  /* CORS: lets the pages work when opened from file:// or another port (e.g. Live Server) */
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-key');
+  if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (url.pathname.toLowerCase() === '/api/timeline') {
     try { read(); } catch (e) { console.error(e.message); return send(res, 500, { error: 'Data file problem — see server log' }); }
     if (req.method === 'GET') return send(res, 200, { items: sorted(read()) });
